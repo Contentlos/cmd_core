@@ -163,14 +163,16 @@ public final class PermissionService {
         return PermissionEntry.Source.DEFAULT;
     }
 
-    /** Setzt eine Stufe und persistiert. */
+    /**
+     * Setzt eine Stufe und persistiert.
+     *
+     * <p>Auch beim Setzen auf {@link PermissionLevel#USER} bleibt der Eintrag in
+     * der JSON erhalten \u2014 sonst k\u00f6nnte ein Vanilla-OP \u00fcber den OP-Fallback
+     * sofort wieder eskaliert werden. Wer einen Spieler komplett aus der Liste
+     * werfen will, nutzt {@link #removeEntry(UUID)}.</p>
+     */
     public synchronized void setLevel(UUID uuid, String displayName, PermissionLevel level, PermissionEntry.Source source) {
         if (uuid == null || level == null) {
-            return;
-        }
-        if (level == PermissionLevel.USER && entries.containsKey(uuid)) {
-            entries.remove(uuid);
-            save();
             return;
         }
         PermissionEntry entry = entries.computeIfAbsent(uuid, u -> new PermissionEntry(u, displayName != null ? displayName : "?", PermissionLevel.USER));

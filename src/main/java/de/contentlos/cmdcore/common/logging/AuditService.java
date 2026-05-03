@@ -40,7 +40,7 @@ public final class AuditService {
         this.server = server;
     }
 
-    public void setMaxEntries(int max) {
+    public synchronized void setMaxEntries(int max) {
         this.maxEntries = Math.max(50, max);
         trim();
     }
