@@ -101,7 +101,7 @@ public final class ServerboundHandlers {
                 case MODULES -> sendModuleList(player, svc);
                 case CONFIG -> send(player, new ClientboundConfigPayload(svc.configs().snapshot()));
                 case LOGS -> sendLogs(player, svc, payload.parameter(), payload.limit());
-                case HISTORY -> sendLogs(player, svc, "history", payload.limit());
+                case HISTORY -> sendLogs(player, svc, payload.parameter(), payload.limit());
                 case DEBUG -> sendDebug(player, svc);
                 case SAVE_ALL -> {
                     svc.permissions().save();

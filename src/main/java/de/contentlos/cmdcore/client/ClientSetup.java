@@ -13,7 +13,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
@@ -38,7 +37,7 @@ public final class ClientSetup {
 
     public ClientSetup(IEventBus modBus, ModContainer container) {
         modBus.addListener(ClientSetup::onRegisterKeyMappings);
-        NeoForge.EVENT_BUS.register(ClientForgeEvents.class);
+        // ClientForgeEvents wird automatisch \u00fcber @EventBusSubscriber registriert.
     }
 
     private static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {

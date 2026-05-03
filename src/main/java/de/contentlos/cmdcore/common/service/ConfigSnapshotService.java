@@ -2,6 +2,7 @@ package de.contentlos.cmdcore.common.service;
 
 import de.contentlos.cmdcore.common.config.NWConfig;
 import de.contentlos.cmdcore.common.network.payload.ClientboundConfigPayload;
+import de.contentlos.cmdcore.common.permissions.PermissionLevel;
 import java.util.ArrayList;
 import java.util.List;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -83,12 +84,14 @@ public final class ConfigSnapshotService {
                 case "general.enableDebugMode" -> set(NWConfig.GENERAL.enableDebugMode, parseBool(rawValue));
                 case "general.dataSaveIntervalSeconds" -> set(NWConfig.GENERAL.dataSaveIntervalSeconds, Integer.parseInt(rawValue));
                 case "admin.enableAdminSystem" -> set(NWConfig.ADMIN.enableAdminSystem, parseBool(rawValue));
+                case "admin.minPanelPermissionLevel" -> set(NWConfig.ADMIN.minPanelPermissionLevel, PermissionLevel.parse(rawValue));
                 case "admin.allowKick" -> set(NWConfig.ADMIN.allowKick, parseBool(rawValue));
                 case "admin.allowTeleport" -> set(NWConfig.ADMIN.allowTeleport, parseBool(rawValue));
                 case "admin.allowGamemodeChange" -> set(NWConfig.ADMIN.allowGamemodeChange, parseBool(rawValue));
                 case "admin.allowWeatherControl" -> set(NWConfig.ADMIN.allowWeatherControl, parseBool(rawValue));
                 case "admin.allowTimeControl" -> set(NWConfig.ADMIN.allowTimeControl, parseBool(rawValue));
                 case "permissions.enablePermissionSystem" -> set(NWConfig.PERMISSIONS.enablePermissionSystem, parseBool(rawValue));
+                case "permissions.defaultPermissionLevel" -> set(NWConfig.PERMISSIONS.defaultPermissionLevel, PermissionLevel.parse(rawValue));
                 case "permissions.allowOpFallback" -> set(NWConfig.PERMISSIONS.allowOpFallback, parseBool(rawValue));
                 case "logging.enableAuditLog" -> set(NWConfig.LOGGING.enableAuditLog, parseBool(rawValue));
                 case "logging.logAdminCommands" -> set(NWConfig.LOGGING.logAdminCommands, parseBool(rawValue));
