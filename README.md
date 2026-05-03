@@ -1,25 +1,110 @@
+# NightWatch Core (CMD Core)
 
-Installation information
-=======
+NightWatch Core ist ein deutschsprachiges Server-Verwaltungs- und Admin-System
+für **Minecraft 1.21.1** auf **NeoForge**. Intern trägt der Modulkern den
+Namen *CMD Core*.
 
-This template repository can be directly cloned to get you started with a new
-mod. Simply create a new repository cloned from this one, by following the
-instructions provided by [GitHub](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
+> **Mod-ID:** `nightwatch_core`  ·  **Mod-Version:** `0.2.0`  ·  **MC:** `1.21.1`  ·  **NeoForge:** `21.1.228+`
 
-Once you have your clone, simply open the repository in the IDE of your choice. The usual recommendation for an IDE is either IntelliJ IDEA or Eclipse.
+## Was bietet der Mod?
 
-If at any point you are missing libraries in your IDE, or you've run into problems you can
-run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
-{this does not affect your code} and then start the process again.
+- Vollständiges Admin-Panel mit zehn Tabs (Übersicht, Spieler, Berechtigungen,
+  Admin-Aktionen, Server, Module, Logs, Verlauf, Einstellungen, Debug).
+- Permission-System mit den Stufen `USER`, `HELPER`, `MODERATOR`, `ADMIN`,
+  `OWNER`, `CONSOLE` inkl. JSON-Persistenz und optionalem OP-Fallback.
+- Einheitliche Backend-Logik: Admin-Panel und Befehle nutzen denselben
+  Service-Layer.
+- Audit-Log und Verlauf mit Quelle (`COMMAND` / `PANEL` / `SYSTEM`).
+- Modul-System mit aktivieren/deaktivieren/neu laden – Kernmodule sind
+  geschützt.
+- Saubere Client/Server-Trennung: Auf dem Dedicated-Server wird kein
+  GUI-Code geladen.
+- Sechs TOML-Bereiche zur Konfiguration (general/admin/permissions/
+  logging/panel) in einer einzigen Server-Config.
 
-Mapping Names:
-============
-By default, the MDK is configured to use the official mapping names from Mojang for methods and fields 
-in the Minecraft codebase. These names are covered by a specific license. All modders should be aware of this
-license. For the latest license text, refer to the mapping file itself, or the reference copy here:
-https://github.com/NeoForged/NeoForm/blob/main/Mojang.md
+## Installation
 
-Additional Resources: 
-==========
-Community Documentation: https://docs.neoforged.net/  
-NeoForged Discord: https://discord.neoforged.net/
+1. Sicherstellen, dass NeoForge **21.1.228** oder neuer für 1.21.1 installiert
+   ist.
+2. Die Datei `nightwatch_core-0.2.0.jar` in den `mods/`-Ordner des
+   Servers (und der gewünschten Clients) kopieren.
+3. Server starten. Die Config wird unter
+   `world/serverconfig/nightwatch_core-server.toml` automatisch erzeugt.
+4. Alle Datenbanken werden unter `world/serverconfig/nightwatch/` (siehe
+   `CMDDataPaths`) abgelegt.
+
+## Erster Start
+
+- Beim Start protokolliert der Mod: *„CMD-Core Services initialisiert.“*
+- Falls noch keine Permission-Datei existiert, ist OP-Fallback (sofern in
+  der Config aktiviert) wirksam: Vanilla-OP-Stufen werden in CMD-Stufen
+  übersetzt (`OP 4` → `OWNER`, `OP 3` → `ADMIN`, …).
+- OWNER-UUIDs lassen sich per Config (`permissions.ownerUUIDs`) hart
+  setzen.
+
+## Befehle
+
+Siehe [COMMANDS.md](COMMANDS.md) für die vollständige Liste mit Beispielen.
+
+Kurzreferenz:
+
+| Bereich     | Beispiel                                         |
+| ----------- | ------------------------------------------------ |
+| Allgemein   | `/nw status`, `/nw reload`, `/nw save`           |
+| Panel       | `/nw panel`, Hotkey **F6** (konfigurierbar)      |
+| Admin       | `/nw admin heal <spieler>`                       |
+| Permission  | `/nw perms set <spieler> <level>`                |
+| Logs        | `/nw logs latest`, `/nw history <spieler>`       |
+
+## Admin-Panel
+
+Siehe [PANEL.md](PANEL.md) für die genaue Beschreibung jedes Tabs, der
+Datenquellen und der Berechtigungen pro Aktion.
+
+Wichtig:
+
+- Jeder Klick im Panel wird serverseitig geprüft.
+- Der Client sendet eine Anfrage, der Server validiert die Berechtigung,
+  führt die Aktion aus und schreibt einen Audit-Eintrag.
+
+## Configs
+
+Datei: `world/serverconfig/nightwatch_core-server.toml`
+
+Bereiche:
+
+- `[general]`   — allgemeine Schalter (Debug, Auto-Save).
+- `[admin]`    — Admin-System, Mindeststufe für das Panel, erlaubte Aktionen.
+- `[permissions]` — Permission-Kern, Default-Stufe, OP-Fallback, OWNER-UUIDs.
+- `[logging]`  — Audit-Log und Verlauf.
+- `[panel]`    — Akzentfarbe, Animationen, Standard-Tab, Hotkey.
+
+Über das Panel-Tab *Einstellungen* lassen sich viele Werte zur Laufzeit
+verändern. Werte, die einen Neustart erfordern, sind dort entsprechend
+markiert.
+
+## Logs und Verlauf
+
+- Audit-Log: `world/serverconfig/nightwatch/admin_history.json` (rolliert
+  über `logging.maxHistoryEntries`).
+- Permissions: `world/serverconfig/nightwatch/permissions.json`.
+- Modul-Status: `world/serverconfig/nightwatch/module_states.json`.
+
+Das Panel sendet nie die komplette Datei an den Client – serverseitig wird
+nach Filter und Limit reduziert (Standardlimit: 100 Einträge).
+
+## Bekannte Einschränkungen
+
+- Inventar/Enderchest-Anzeige im Panel ist auf **Backend** vorbereitet,
+  aber bewusst noch nicht clientseitig sichtbar, weil sich keine saubere,
+  ohne Mixins/Reflection auskommende GUI-Lösung in 1.21.1 NeoForge anbietet.
+- Vanish und Freeze sind im Panel als Aktionen vorgesehen, aber im aktuellen
+  Stand nicht implementiert. Die zugehörigen Buttons existieren daher nicht
+  im UI – es gibt keine Fake-Buttons.
+- Manche Configs erfordern einen Neustart und werden im Tab *Einstellungen*
+  als „Neustart nötig“ markiert.
+
+## Lizenz
+
+`All Rights Reserved` (siehe `gradle.properties`). Jede Weitergabe nur mit
+ausdrücklicher Erlaubnis von Contentlos.
