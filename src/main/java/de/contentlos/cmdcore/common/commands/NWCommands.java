@@ -81,9 +81,11 @@ public final class NWCommands {
         perms.then(Commands.literal("save").executes(NWCommands::permsSave));
         root.then(perms);
 
-        // Admin-Aktionen
+        // Admin-Aktionen — Tor auf der Brigadier-Ebene ist HELPER (niedrigste
+        // tatsächlich verlangte Stufe), die einzelnen Subkommandos prüfen ihre
+        // konkrete Mindeststufe danach selbst (siehe runAction/adminBroadcast/...).
         LiteralArgumentBuilder<CommandSourceStack> admin = Commands.literal("admin")
-                .requires(s -> hasLevel(s, PermissionLevel.MODERATOR));
+                .requires(s -> hasLevel(s, PermissionLevel.HELPER));
         admin.then(Commands.literal("heal")
                 .then(Commands.argument("spieler", EntityArgument.player())
                         .executes(NWCommands::adminHeal)));
@@ -335,28 +337,28 @@ public final class NWCommands {
     }
 
     private static int adminHeal(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-        return runAction(ctx, EntityArgument.getPlayer(ctx, "spieler"),
+        return runAction(ctx, PermissionLevel.HELPER, EntityArgument.getPlayer(ctx, "spieler"),
                 t -> CMDCoreServices.required().adminActions().heal(t), "HEAL");
     }
     private static int adminFeed(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-        return runAction(ctx, EntityArgument.getPlayer(ctx, "spieler"),
+        return runAction(ctx, PermissionLevel.HELPER, EntityArgument.getPlayer(ctx, "spieler"),
                 t -> CMDCoreServices.required().adminActions().feed(t), "FEED");
     }
     private static int adminFlyToggle(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-        return runAction(ctx, EntityArgument.getPlayer(ctx, "spieler"),
+        return runAction(ctx, PermissionLevel.MODERATOR, EntityArgument.getPlayer(ctx, "spieler"),
                 t -> CMDCoreServices.required().adminActions().toggleFlight(t), "FLY_TOGGLE");
     }
     private static int adminGamemode(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer target = EntityArgument.getPlayer(ctx, "spieler");
         String mode = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "modus");
-        return runAction(ctx, target,
+        return runAction(ctx, PermissionLevel.MODERATOR, target,
                 t -> CMDCoreServices.required().adminActions().setGamemode(t, mode),
                 "SET_GAMEMODE:" + mode);
     }
     private static int adminTp(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer who = EntityArgument.getPlayer(ctx, "spieler");
         ServerPlayer to = EntityArgument.getPlayer(ctx, "ziel");
-        return runAction(ctx, who,
+        return runAction(ctx, PermissionLevel.MODERATOR, who,
                 t -> CMDCoreServices.required().adminActions().teleportToTarget(t, to),
                 "TELEPORT_TO:" + to.getGameProfile().getName());
     }
@@ -367,18 +369,18 @@ public final class NWCommands {
             send(ctx.getSource(), Component.literal("Nur als Spieler nutzbar.").withStyle(ChatFormatting.RED));
             return 0;
         }
-        return runAction(ctx, target,
+        return runAction(ctx, PermissionLevel.MODERATOR, target,
                 t -> CMDCoreServices.required().adminActions().teleportHere(self, t),
                 "TELEPORT_HERE");
     }
     private static int adminKick(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer target = EntityArgument.getPlayer(ctx, "spieler");
         String reason = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "grund");
-        return runAction(ctx, target,
+        return runAction(ctx, PermissionLevel.MODERATOR, target,
                 t -> CMDCoreServices.required().adminActions().kick(t, reason), "KICK");
     }
     private static int adminBroadcast(CommandContext<CommandSourceStack> ctx) {
-        if (!hasLevel(ctx.getSource(), PermissionLevel.MODERATOR)) return denied(ctx);
+        if (!hasLevel(ctx.getSource(), PermissionLevel.HELPER)) return denied(ctx);
         String msg = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "nachricht");
         AdminActionService.ActionResult r = CMDCoreServices.required().adminActions().broadcast(msg);
         feedback(ctx, r);
@@ -450,9 +452,11 @@ public final class NWCommands {
         AdminActionService.ActionResult apply(ServerPlayer target);
     }
 
-    private static int runAction(CommandContext<CommandSourceStack> ctx, ServerPlayer target,
+    private static int runAction(CommandContext<CommandSourceStack> ctx,
+                                 PermissionLevel required,
+                                 ServerPlayer target,
                                  ActionFn fn, String actionLabel) {
-        if (!hasLevel(ctx.getSource(), PermissionLevel.MODERATOR)) return denied(ctx);
+        if (!hasLevel(ctx.getSource(), required)) return denied(ctx);
         AdminActionService.ActionResult r = fn.apply(target);
         feedback(ctx, r);
         var svc = CMDCoreServices.required();

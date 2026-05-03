@@ -74,9 +74,23 @@ public final class ServerboundHandlers {
             PermissionService perms = svc.permissions();
             PermissionLevel level = perms.levelOf(player.getUUID());
             PermissionLevel minPanel = NWConfig.ADMIN.minPanelPermissionLevel.get();
-            if (!level.atLeast(minPanel) && !NWConfig.ADMIN.enableAdminSystem.get()) {
+            if (!NWConfig.ADMIN.enableAdminSystem.get() || !level.atLeast(minPanel)) {
                 send(player, new ClientboundActionResultPayload(false,
                         "Du hast keine Berechtigung dafür.", "Mindeststufe: " + minPanel.displayName()));
+                svc.audit().recordPanel(player, level, null, null,
+                        "Verweigert: REQUEST " + payload.kind(), false,
+                        "Stufe nicht ausreichend", "admin_panel");
+                return;
+            }
+            // Pro-Aktion-Mindeststufe (zusätzlich zur Panel-Mindeststufe).
+            PermissionLevel kindRequired = requiredLevelForRequest(payload.kind());
+            if (!level.atLeast(kindRequired)) {
+                send(player, new ClientboundActionResultPayload(false,
+                        "Diese Daten benötigen Stufe " + kindRequired.displayName() + ".",
+                        "Deine Stufe: " + level.displayName()));
+                svc.audit().recordPanel(player, level, null, null,
+                        "Verweigert: REQUEST " + payload.kind(), false,
+                        "Stufe nicht ausreichend", "admin_panel");
                 return;
             }
             switch (payload.kind()) {
@@ -307,6 +321,23 @@ public final class ServerboundHandlers {
         } catch (IllegalArgumentException e) {
             return svc.server().getPlayerList().getPlayerByName(uuid);
         }
+    }
+
+    /**
+     * Mindeststufe für Datenanfragen (Lesezugriff im Panel).
+     *
+     * <p>Liegt zusätzlich zur Panel-Mindeststufe ({@code admin.minPanelPermissionLevel})
+     * an, damit sensible Datenkanäle (Permissions, Logs, Debug, Config) nicht für
+     * jede:n Spieler:in erreichbar sind, sobald die Panel-Mindeststufe niedriger
+     * gesetzt wird.</p>
+     */
+    private static PermissionLevel requiredLevelForRequest(ServerboundRequestPayload.Kind kind) {
+        return switch (kind) {
+            case OPEN_PANEL, OVERVIEW, PLAYERS, MODULES -> PermissionLevel.MODERATOR;
+            case LOGS, HISTORY, CONFIG, PERMISSIONS, REFRESH -> PermissionLevel.ADMIN;
+            case DEBUG -> PermissionLevel.ADMIN;
+            case SAVE_ALL -> PermissionLevel.MODERATOR;
+        };
     }
 
     private static PermissionLevel requiredLevel(ServerboundActionPayload.Action action) {
