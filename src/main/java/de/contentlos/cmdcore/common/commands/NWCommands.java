@@ -190,6 +190,7 @@ public final class NWCommands {
     }
 
     private static int runStatus(CommandContext<CommandSourceStack> ctx) {
+        if (!hasLevel(ctx.getSource(), PermissionLevel.HELPER)) return denied(ctx);
         CMDCoreServices svc = CMDCoreServices.required();
         send(ctx.getSource(), Component.literal("=== Serverstatus ===").withStyle(ChatFormatting.AQUA));
         send(ctx.getSource(), "Version: " + CMDCore.VERSION);
@@ -269,6 +270,7 @@ public final class NWCommands {
     }
 
     private static int runListModules(CommandContext<CommandSourceStack> ctx) {
+        if (!hasLevel(ctx.getSource(), PermissionLevel.ADMIN)) return denied(ctx);
         CMDCoreServices svc = CMDCoreServices.required();
         send(ctx.getSource(), Component.literal("=== Module ===").withStyle(ChatFormatting.AQUA));
         for (var m : svc.modules().sorted()) {
@@ -323,7 +325,7 @@ public final class NWCommands {
     }
 
     private static int permsList(CommandContext<CommandSourceStack> ctx) {
-        if (!hasLevel(ctx.getSource(), PermissionLevel.MODERATOR)) return denied(ctx);
+        if (!hasLevel(ctx.getSource(), PermissionLevel.ADMIN)) return denied(ctx);
         CMDCoreServices svc = CMDCoreServices.required();
         var entries = svc.permissions().listEntries();
         send(ctx.getSource(), Component.literal("=== Berechtigungen (" + entries.size() + ") ===")
