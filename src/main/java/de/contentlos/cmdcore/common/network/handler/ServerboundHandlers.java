@@ -65,6 +65,33 @@ public final class ServerboundHandlers {
         net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload);
     }
 
+    /**
+     * Gemeinsames Panel-Auth-Tor für alle Serverbound-Payloads. Prüft, dass
+     * das Admin-System aktiviert ist und der Spieler die Panel-Mindeststufe
+     * erreicht. Bei Fehlschlag wird ein {@link ClientboundActionResultPayload}
+     * gesendet, ein Audit-Eintrag geschrieben und {@code false} zurückgegeben.
+     *
+     * <p>Ohne diese Prüfung könnte ein Client gezielt einzelne Action-/Update-
+     * Payloads schicken, ohne erst {@code REQUEST OPEN_PANEL} durchlaufen zu
+     * müssen — ein HELPER könnte dann z. B. {@code HEAL}, {@code FEED} oder
+     * {@code BROADCAST} ausführen, obwohl er das Panel selbst gar nicht öffnen
+     * darf.</p>
+     */
+    private static boolean panelGate(ServerPlayer player, CMDCoreServices svc,
+                                     PermissionLevel level, String auditAction, String module) {
+        PermissionLevel minPanel = NWConfig.ADMIN.minPanelPermissionLevel.get();
+        if (!NWConfig.ADMIN.enableAdminSystem.get() || !level.atLeast(minPanel)) {
+            send(player, new ClientboundActionResultPayload(false,
+                    "Du hast keine Berechtigung dafür.",
+                    "Mindeststufe: " + minPanel.displayName()));
+            svc.audit().recordPanel(player, level, null, null,
+                    "Verweigert: " + auditAction, false,
+                    "Panel-Stufe nicht ausreichend", module);
+            return false;
+        }
+        return true;
+    }
+
     public static void handleRequest(ServerboundRequestPayload payload, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             ServerPlayer player = playerOf(ctx);
@@ -73,13 +100,7 @@ public final class ServerboundHandlers {
             if (svc == null) return;
             PermissionService perms = svc.permissions();
             PermissionLevel level = perms.levelOf(player.getUUID());
-            PermissionLevel minPanel = NWConfig.ADMIN.minPanelPermissionLevel.get();
-            if (!NWConfig.ADMIN.enableAdminSystem.get() || !level.atLeast(minPanel)) {
-                send(player, new ClientboundActionResultPayload(false,
-                        "Du hast keine Berechtigung dafür.", "Mindeststufe: " + minPanel.displayName()));
-                svc.audit().recordPanel(player, level, null, null,
-                        "Verweigert: REQUEST " + payload.kind(), false,
-                        "Stufe nicht ausreichend", "admin_panel");
+            if (!panelGate(player, svc, level, "REQUEST " + payload.kind(), "admin_panel")) {
                 return;
             }
             // Pro-Aktion-Mindeststufe (zusätzlich zur Panel-Mindeststufe).
@@ -214,6 +235,10 @@ public final class ServerboundHandlers {
             CMDCoreServices svc = CMDCoreServices.get();
             if (svc == null) return;
             PermissionLevel adminLevel = svc.permissions().levelOf(player.getUUID());
+
+            if (!panelGate(player, svc, adminLevel, "ACTION " + payload.action(), "admin_panel")) {
+                return;
+            }
 
             // Mindeststufe pro Aktion
             PermissionLevel required = requiredLevel(payload.action());
@@ -358,6 +383,9 @@ public final class ServerboundHandlers {
             CMDCoreServices svc = CMDCoreServices.get();
             if (svc == null) return;
             PermissionLevel adminLevel = svc.permissions().levelOf(player.getUUID());
+            if (!panelGate(player, svc, adminLevel, "UPDATE_PERMISSION", "permissions")) {
+                return;
+            }
             if (!adminLevel.atLeast(PermissionLevel.OWNER)) {
                 // Nur OWNER darf Permissions setzen
                 send(player, new ClientboundActionResultPayload(false,
@@ -421,6 +449,9 @@ public final class ServerboundHandlers {
             CMDCoreServices svc = CMDCoreServices.get();
             if (svc == null) return;
             PermissionLevel adminLevel = svc.permissions().levelOf(player.getUUID());
+            if (!panelGate(player, svc, adminLevel, "UPDATE_CONFIG " + payload.key(), "config")) {
+                return;
+            }
             if (!adminLevel.atLeast(PermissionLevel.ADMIN)) {
                 send(player, new ClientboundActionResultPayload(false,
                         "Nur ADMIN/OWNER dürfen Configs ändern.", ""));
@@ -442,6 +473,9 @@ public final class ServerboundHandlers {
             CMDCoreServices svc = CMDCoreServices.get();
             if (svc == null) return;
             PermissionLevel adminLevel = svc.permissions().levelOf(player.getUUID());
+            if (!panelGate(player, svc, adminLevel, "TOGGLE_MODULE " + payload.moduleId(), "modules")) {
+                return;
+            }
             if (!adminLevel.atLeast(PermissionLevel.ADMIN)) {
                 send(player, new ClientboundActionResultPayload(false,
                         "Nur ADMIN/OWNER dürfen Module steuern.", ""));

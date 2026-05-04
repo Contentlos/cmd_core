@@ -44,8 +44,11 @@ public record ServerboundActionPayload(Action action, String targetUuid, String 
     public static final CustomPacketPayload.Type<ServerboundActionPayload> TYPE =
             new CustomPacketPayload.Type<>(NWNetwork.id("c2s_action"));
 
+    private static final Action[] ACTION_VALUES = Action.values();
+
     public static final StreamCodec<ByteBuf, ServerboundActionPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.idMapper(i -> Action.values()[i], Enum::ordinal),
+            ByteBufCodecs.idMapper(i -> i >= 0 && i < ACTION_VALUES.length ? ACTION_VALUES[i] : ACTION_VALUES[0],
+                    Enum::ordinal),
             ServerboundActionPayload::action,
             ByteBufCodecs.STRING_UTF8,
             ServerboundActionPayload::targetUuid,

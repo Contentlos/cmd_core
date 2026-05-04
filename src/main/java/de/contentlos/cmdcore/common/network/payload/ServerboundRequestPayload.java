@@ -32,8 +32,11 @@ public record ServerboundRequestPayload(Kind kind, String parameter, int limit) 
     public static final CustomPacketPayload.Type<ServerboundRequestPayload> TYPE =
             new CustomPacketPayload.Type<>(NWNetwork.id("c2s_request"));
 
+    private static final Kind[] KIND_VALUES = Kind.values();
+
     public static final StreamCodec<ByteBuf, ServerboundRequestPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.idMapper(i -> Kind.values()[i & 0xFF], Enum::ordinal),
+            ByteBufCodecs.idMapper(i -> i >= 0 && i < KIND_VALUES.length ? KIND_VALUES[i] : KIND_VALUES[0],
+                    Enum::ordinal),
             ServerboundRequestPayload::kind,
             ByteBufCodecs.STRING_UTF8,
             ServerboundRequestPayload::parameter,
