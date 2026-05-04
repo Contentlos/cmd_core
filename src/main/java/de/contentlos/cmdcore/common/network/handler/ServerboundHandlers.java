@@ -384,7 +384,18 @@ public final class ServerboundHandlers {
                 send(player, new ClientboundActionResultPayload(removed, message, ""));
                 return;
             }
-            PermissionLevel newLevel = PermissionLevel.parse(payload.level());
+            PermissionLevel newLevel = PermissionLevel.parseStrict(payload.level());
+            if (newLevel == null) {
+                svc.audit().recordPanel(player, adminLevel, payload.targetName(), uuid,
+                        "Verweigert: Permission-Set mit unbekannter Stufe \""
+                                + payload.level() + "\"", false,
+                        "Stufe ungültig", "permissions");
+                send(player, new ClientboundActionResultPayload(false,
+                        "Unbekannte Stufe: " + payload.level()
+                                + ". Erlaubt: USER, HELPER, MODERATOR, ADMIN, OWNER.",
+                        ""));
+                return;
+            }
             if (!newLevel.isAssignable()) {
                 svc.audit().recordPanel(player, adminLevel, payload.targetName(), uuid,
                         "Verweigert: Permission auf " + newLevel.name(), false,

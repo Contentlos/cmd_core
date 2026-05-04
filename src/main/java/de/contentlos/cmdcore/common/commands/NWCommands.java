@@ -291,7 +291,17 @@ public final class NWCommands {
         if (!hasLevel(ctx.getSource(), PermissionLevel.OWNER)) return denied(ctx);
         ServerPlayer target = EntityArgument.getPlayer(ctx, "spieler");
         String levelName = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "level");
-        PermissionLevel newLevel = PermissionLevel.parse(levelName);
+        PermissionLevel newLevel = PermissionLevel.parseStrict(levelName);
+        if (newLevel == null) {
+            send(ctx.getSource(), Component.literal(
+                    "Unbekannte Stufe: " + levelName + ". Erlaubt: USER, HELPER, MODERATOR, ADMIN, OWNER.")
+                    .withStyle(ChatFormatting.RED));
+            CMDCoreServices.required().audit().recordCommand(ctx.getSource(), levelOf(ctx),
+                    target.getGameProfile().getName(), target.getUUID(),
+                    "Verweigert: Permission-Set mit unbekannter Stufe \"" + levelName + "\"", false,
+                    "Stufe ungültig", "permissions");
+            return 0;
+        }
         if (!newLevel.isAssignable()) {
             send(ctx.getSource(), Component.literal(
                     "Stufe " + newLevel.name() + " ist reserviert für die Server-Konsole und nicht zuweisbar.")
