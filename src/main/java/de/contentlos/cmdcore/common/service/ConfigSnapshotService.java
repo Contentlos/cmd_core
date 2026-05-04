@@ -88,7 +88,11 @@ public final class ConfigSnapshotService {
                     PermissionLevel lvl = PermissionLevel.parseStrict(rawValue);
                     if (lvl == null) {
                         return "Ungültige Stufe: " + rawValue
-                                + " (erlaubt: USER, HELPER, MODERATOR, ADMIN, OWNER, CONSOLE)";
+                                + " (erlaubt: USER, HELPER, MODERATOR, ADMIN, OWNER)";
+                    }
+                    if (!lvl.isAssignable()) {
+                        return "Stufe " + lvl.name()
+                                + " ist reserviert für die Server-Konsole und nicht als Panel-Mindeststufe zulässig.";
                     }
                     set(NWConfig.ADMIN.minPanelPermissionLevel, lvl);
                 }

@@ -40,7 +40,14 @@ public final class PermissionService {
 
     private final MinecraftServer server;
     private final Map<UUID, PermissionEntry> entries = new ConcurrentHashMap<>();
-    private final Map<UUID, PermissionEntry> opFallbackCache = new ConcurrentHashMap<>();
+    /**
+     * Cache für OP-Fallback-Lookups. {@link Optional#empty()} bedeutet "schon
+     * geprüft, kein OP" — wir können {@code null} nicht direkt cachen, weil
+     * {@link ConcurrentHashMap#computeIfAbsent} null-Rückgaben verwirft. Ohne
+     * den leeren Optional würde jeder Panel-Request für jeden Nicht-OP-Spieler
+     * den teuren Profil-Cache-Lookup neu starten.
+     */
+    private final Map<UUID, Optional<PermissionEntry>> opFallbackCache = new ConcurrentHashMap<>();
     private boolean opFallbackEnabled = true;
     private PermissionLevel defaultLevel = PermissionLevel.USER;
 
@@ -263,7 +270,9 @@ public final class PermissionService {
 
     @Nullable
     private PermissionEntry opFallbackEntry(UUID uuid) {
-        return opFallbackCache.computeIfAbsent(uuid, this::computeOpFallback);
+        return opFallbackCache
+                .computeIfAbsent(uuid, u -> Optional.ofNullable(computeOpFallback(u)))
+                .orElse(null);
     }
 
     @Nullable
