@@ -58,6 +58,10 @@ public class NightWatchCore {
     }
 
     private void onServerStarted(ServerStartedEvent event) {
+        // Auto-Save-Timer pro Session zurücksetzen, damit ein gespeicherter Wert
+        // aus der vorherigen Integrated-Server-Session nicht sofort beim ersten
+        // Tick einen Save auslöst.
+        lastSaveCheckMs = 0L;
         try {
             CMDCoreServices.init(event.getServer());
             LOGGER.info("CMD-Core Services initialisiert.");
@@ -67,6 +71,7 @@ public class NightWatchCore {
     }
 
     private void onServerStopping(ServerStoppingEvent event) {
+        lastSaveCheckMs = 0L;
         try {
             CMDCoreServices.shutdown();
             LOGGER.info("CMD-Core Services heruntergefahren.");

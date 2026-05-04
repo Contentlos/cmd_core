@@ -459,6 +459,9 @@ public final class ServerboundHandlers {
             }
             String result = svc.configs().applyChange(payload.key(), payload.value());
             boolean ok = result.startsWith("OK");
+            if (ok) {
+                propagateConfigChange(svc, payload.key());
+            }
             svc.audit().recordPanel(player, adminLevel, null, null,
                     "Config " + payload.key() + " = " + payload.value(),
                     ok, ok ? null : result, "config");
@@ -523,5 +526,33 @@ public final class ServerboundHandlers {
                     "Modul " + id + " " + action, success, success ? null : message, "modules");
             send(player, new ClientboundActionResultPayload(success, message, ""));
         });
+    }
+
+    /**
+     * Propagiert eine erfolgreich angewendete Config-Änderung an die laufenden
+     * Services. Notwendig, weil {@link de.contentlos.cmdcore.common.service.ConfigSnapshotService#applyChange}
+     * nur die TOML-Werte aktualisiert — die Services lesen aber teils einmalig
+     * gecachte Felder, die ohne expliziten Push nicht sofort wirksam werden.
+     *
+     * <p>Sicherheitsrelevant ist insbesondere {@code permissions.allowOpFallback}:
+     * ohne Propagation würden Vanilla-OPs trotz "Aus"-Schalten weiter erhöhte
+     * Rechte erhalten, weil {@link de.contentlos.cmdcore.common.permissions.PermissionService}
+     * sein {@code opFallbackEnabled}-Flag im RAM hält.</p>
+     */
+    private static void propagateConfigChange(CMDCoreServices svc, String key) {
+        if (key == null) return;
+        switch (key) {
+            case "permissions.allowOpFallback" -> {
+                svc.permissions().setOpFallbackEnabled(NWConfig.PERMISSIONS.allowOpFallback.get());
+                svc.permissions().invalidateOpCache();
+            }
+            case "permissions.defaultPermissionLevel" ->
+                    svc.permissions().setDefaultLevel(NWConfig.PERMISSIONS.defaultPermissionLevel.get());
+            case "logging.maxHistoryEntries" ->
+                    svc.audit().setMaxEntries(NWConfig.LOGGING.maxHistoryEntries.get());
+            case "general.enableDebugMode" ->
+                    svc.setDebugActive(NWConfig.GENERAL.enableDebugMode.get());
+            default -> { /* keine Propagation nötig */ }
+        }
     }
 }
