@@ -55,9 +55,11 @@ public final class NWCommands {
         root.then(Commands.literal("debug").executes(NWCommands::runDebug));
         root.then(Commands.literal("modules").executes(NWCommands::runListModules));
 
-        // Permissions
+        // Permissions — Brigadier-Tor ist die niedrigste tatsächlich benötigte
+        // Stufe (MODERATOR für `perms get/list`); einzelne Subkommandos prüfen
+        // ihre konkrete Mindeststufe selbst (siehe permsSet/permsRemove).
         LiteralArgumentBuilder<CommandSourceStack> perms = Commands.literal("perms")
-                .requires(s -> hasLevel(s, PermissionLevel.ADMIN));
+                .requires(s -> hasLevel(s, PermissionLevel.MODERATOR));
         perms.then(Commands.literal("get")
                 .then(Commands.argument("spieler", EntityArgument.player())
                         .executes(NWCommands::permsGet)));
@@ -77,8 +79,12 @@ public final class NWCommands {
                 .requires(s -> hasLevel(s, PermissionLevel.OWNER))
                 .then(Commands.argument("spieler", EntityArgument.player())
                         .executes(NWCommands::permsRemove)));
-        perms.then(Commands.literal("reload").executes(NWCommands::permsReload));
-        perms.then(Commands.literal("save").executes(NWCommands::permsSave));
+        perms.then(Commands.literal("reload")
+                .requires(s -> hasLevel(s, PermissionLevel.ADMIN))
+                .executes(NWCommands::permsReload));
+        perms.then(Commands.literal("save")
+                .requires(s -> hasLevel(s, PermissionLevel.ADMIN))
+                .executes(NWCommands::permsSave));
         root.then(perms);
 
         // Admin-Aktionen — Tor auf der Brigadier-Ebene ist HELPER (niedrigste

@@ -84,14 +84,32 @@ public final class ConfigSnapshotService {
                 case "general.enableDebugMode" -> set(NWConfig.GENERAL.enableDebugMode, parseBool(rawValue));
                 case "general.dataSaveIntervalSeconds" -> set(NWConfig.GENERAL.dataSaveIntervalSeconds, Integer.parseInt(rawValue));
                 case "admin.enableAdminSystem" -> set(NWConfig.ADMIN.enableAdminSystem, parseBool(rawValue));
-                case "admin.minPanelPermissionLevel" -> set(NWConfig.ADMIN.minPanelPermissionLevel, PermissionLevel.parse(rawValue));
+                case "admin.minPanelPermissionLevel" -> {
+                    PermissionLevel lvl = PermissionLevel.parseStrict(rawValue);
+                    if (lvl == null) {
+                        return "Ungültige Stufe: " + rawValue
+                                + " (erlaubt: USER, HELPER, MODERATOR, ADMIN, OWNER, CONSOLE)";
+                    }
+                    set(NWConfig.ADMIN.minPanelPermissionLevel, lvl);
+                }
                 case "admin.allowKick" -> set(NWConfig.ADMIN.allowKick, parseBool(rawValue));
                 case "admin.allowTeleport" -> set(NWConfig.ADMIN.allowTeleport, parseBool(rawValue));
                 case "admin.allowGamemodeChange" -> set(NWConfig.ADMIN.allowGamemodeChange, parseBool(rawValue));
                 case "admin.allowWeatherControl" -> set(NWConfig.ADMIN.allowWeatherControl, parseBool(rawValue));
                 case "admin.allowTimeControl" -> set(NWConfig.ADMIN.allowTimeControl, parseBool(rawValue));
                 case "permissions.enablePermissionSystem" -> set(NWConfig.PERMISSIONS.enablePermissionSystem, parseBool(rawValue));
-                case "permissions.defaultPermissionLevel" -> set(NWConfig.PERMISSIONS.defaultPermissionLevel, PermissionLevel.parse(rawValue));
+                case "permissions.defaultPermissionLevel" -> {
+                    PermissionLevel lvl = PermissionLevel.parseStrict(rawValue);
+                    if (lvl == null) {
+                        return "Ungültige Stufe: " + rawValue
+                                + " (erlaubt: USER, HELPER, MODERATOR, ADMIN, OWNER)";
+                    }
+                    if (!lvl.isAssignable()) {
+                        return "Stufe " + lvl.name()
+                                + " ist reserviert für die Server-Konsole und nicht als Default zulässig.";
+                    }
+                    set(NWConfig.PERMISSIONS.defaultPermissionLevel, lvl);
+                }
                 case "permissions.allowOpFallback" -> set(NWConfig.PERMISSIONS.allowOpFallback, parseBool(rawValue));
                 case "logging.enableAuditLog" -> set(NWConfig.LOGGING.enableAuditLog, parseBool(rawValue));
                 case "logging.logAdminCommands" -> set(NWConfig.LOGGING.logAdminCommands, parseBool(rawValue));

@@ -55,6 +55,10 @@ public enum PermissionLevel {
      * Liest eine Stufe aus einem String.
      * Akzeptiert sowohl "ADMIN" als auch "admin".
      * Liefert {@link #USER} bei null/unbekannt.
+     *
+     * <p>Bequeme Variante für nicht-sicherheitskritische Aufrufer (Audit-Anzeige,
+     * Default-Werte). Für Config-Schreibvorgänge bitte {@link #parseStrict(String)}
+     * verwenden, sonst werden Tippfehler still als USER interpretiert.</p>
      */
     public static PermissionLevel parse(String raw) {
         if (raw == null) {
@@ -64,6 +68,21 @@ public enum PermissionLevel {
             return PermissionLevel.valueOf(raw.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return USER;
+        }
+    }
+
+    /**
+     * Strikte Variante von {@link #parse(String)}: liefert {@code null}, wenn der
+     * Eingabewert keiner gültigen Stufe entspricht. Für sicherheitsrelevante
+     * Schreibvorgänge gedacht, bei denen ein Tippfehler nicht stillschweigend zu
+     * USER entschärft werden darf.
+     */
+    public static PermissionLevel parseStrict(String raw) {
+        if (raw == null) return null;
+        try {
+            return PermissionLevel.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 

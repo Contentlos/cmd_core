@@ -62,11 +62,14 @@ public class PlayersTab extends PanelTab {
     private void sendAction(ServerboundActionPayload.Action action, String arg) {
         String target = targetField == null ? "" : targetField.getValue().trim();
         if (target.isEmpty()) {
-            // Auf erstes online ausweichen, wenn kein Ziel
-            ClientboundPlayerListPayload list = PanelState.get().players();
-            if (list != null && !list.players().isEmpty()) {
-                target = list.players().get(0).name();
-            }
+            // Kein Auto-Targeting auf den ersten Online-Spieler — gerade bei
+            // destruktiven Aktionen (Kick, Gamemode-Change) wäre das gefährlich.
+            PanelState.get().setLastResult(
+                    new de.contentlos.cmdcore.common.network.payload.ClientboundActionResultPayload(
+                            false,
+                            "Kein Zielspieler. Bitte oben einen Namen eintragen.",
+                            ""));
+            return;
         }
         PanelClient.sendAction(action, target, arg, 0);
         PanelClient.sendRequest(ServerboundRequestPayload.Kind.PLAYERS);
