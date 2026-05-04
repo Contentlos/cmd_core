@@ -385,6 +385,15 @@ public final class ServerboundHandlers {
                 return;
             }
             PermissionLevel newLevel = PermissionLevel.parse(payload.level());
+            if (!newLevel.isAssignable()) {
+                svc.audit().recordPanel(player, adminLevel, payload.targetName(), uuid,
+                        "Verweigert: Permission auf " + newLevel.name(), false,
+                        "Stufe nicht zuweisbar", "permissions");
+                send(player, new ClientboundActionResultPayload(false,
+                        "Stufe " + newLevel.name() + " ist reserviert für die Server-Konsole und nicht zuweisbar.",
+                        ""));
+                return;
+            }
             svc.permissions().setLevel(uuid, payload.targetName(), newLevel,
                     PermissionEntry.Source.JSON);
             svc.audit().recordPanel(player, adminLevel, payload.targetName(), uuid,

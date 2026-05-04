@@ -66,7 +66,7 @@ public final class NWCommands {
                 .then(Commands.argument("spieler", EntityArgument.player())
                         .then(Commands.argument("level", com.mojang.brigadier.arguments.StringArgumentType.word())
                                 .suggests((c, b) -> {
-                                    for (PermissionLevel l : PermissionLevel.values()) {
+                                    for (PermissionLevel l : PermissionLevel.assignableValues()) {
                                         b.suggest(l.name());
                                     }
                                     return b.buildFuture();
@@ -286,6 +286,16 @@ public final class NWCommands {
         ServerPlayer target = EntityArgument.getPlayer(ctx, "spieler");
         String levelName = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "level");
         PermissionLevel newLevel = PermissionLevel.parse(levelName);
+        if (!newLevel.isAssignable()) {
+            send(ctx.getSource(), Component.literal(
+                    "Stufe " + newLevel.name() + " ist reserviert für die Server-Konsole und nicht zuweisbar.")
+                    .withStyle(ChatFormatting.RED));
+            CMDCoreServices.required().audit().recordCommand(ctx.getSource(), levelOf(ctx),
+                    target.getGameProfile().getName(), target.getUUID(),
+                    "Verweigert: Permission auf " + newLevel.name(), false,
+                    "Stufe nicht zuweisbar", "permissions");
+            return 0;
+        }
         CMDCoreServices svc = CMDCoreServices.required();
         svc.permissions().setLevel(target.getUUID(), target.getGameProfile().getName(), newLevel,
                 PermissionEntry.Source.JSON);

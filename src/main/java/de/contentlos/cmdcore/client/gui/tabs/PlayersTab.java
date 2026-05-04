@@ -99,7 +99,7 @@ public class PlayersTab extends PanelTab {
         int row = headerY + 14;
         int idx = 0;
         for (var p : list.players()) {
-            if (!f.isEmpty() && !p.name().toLowerCase().contains(f)) { idx++; continue; }
+            if (!f.isEmpty() && !p.name().toLowerCase().contains(f)) continue;
             if (row + 12 > y + h - 28) break;
             int rowBg = (idx % 2 == 0) ? 0xFF202736 : 0xFF1B212D;
             g.fill(x, row, x + w, row + 12, rowBg);

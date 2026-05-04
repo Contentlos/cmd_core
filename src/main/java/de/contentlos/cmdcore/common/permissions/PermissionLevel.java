@@ -66,4 +66,20 @@ public enum PermissionLevel {
             return USER;
         }
     }
+
+    /**
+     * Stufen, die einem Spieler tatsächlich zugewiesen werden dürfen.
+     *
+     * <p>{@link #CONSOLE} ist explizit ausgenommen — die Stufe ist für die
+     * Serverkonsole reserviert und würde, wäre sie zuweisbar, jede
+     * OWNER-Prüfung umgehen.</p>
+     */
+    public static PermissionLevel[] assignableValues() {
+        return new PermissionLevel[] { USER, HELPER, MODERATOR, ADMIN, OWNER };
+    }
+
+    /** True, wenn diese Stufe einem Spieler vergeben werden darf. */
+    public boolean isAssignable() {
+        return this != CONSOLE;
+    }
 }
